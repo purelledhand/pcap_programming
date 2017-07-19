@@ -25,19 +25,31 @@ int main(){
     else if(packet_status == -1 || packet_status == -2)
       return 0;
     
-    if(packet[12] == 0x08){
+    if((packet[12] == 0x08)&&(packet[23] == 6)){
     ++cnt;
     printf("Packet #%d\n",cnt);
+
     printf("Src MAC : ");
     for(int i=0;i<6;i++){
       printf("%.02x",packet[i]);
     }
-    printf("\n");
-    printf("Dst MAC : ");
+    printf("\nDst MAC : ");
     for(int i=6;i<12;i++){
       printf("%.02x",packet[i]);
     }
+
+    printf("\nSrc IP : ");
+    for(int i=26;i<30;i++){
+      printf("%d",packet[i]);
     }
+    printf("\nDst IP : ");
+    for(int i=30;i<34;i++){
+      printf("%d",packet[i]);
+    }
+
+    }
+
+
     printf("\n\n");
 
     }
