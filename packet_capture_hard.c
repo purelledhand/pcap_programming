@@ -1,5 +1,8 @@
 #include<stdio.h>
 #include<pcap.h>
+#include "netinet/ip.h"
+#include "netinet/tcp.h"
+#include "arpa/inet.h"
 
 int main(){
     pcap_t *handle;
@@ -7,6 +10,8 @@ int main(){
     char errbuf[PCAP_ERRBUF_SIZE];
     const u_char *packet;
     struct pcap_pkthdr *header;
+    struct ip *iph;
+    struct tcphdr *tcph;
 
     dev = pcap_lookupdev(errbuf);
     printf("interface name : %s\n",dev);
@@ -18,6 +23,7 @@ int main(){
     
     int packet_status = 0;
     int cnt = 0;
+
     while(1){
     packet_status = pcap_next_ex(handle, &header, &packet);
     if(packet_status == 0)
@@ -46,11 +52,11 @@ int main(){
     for(int i=30;i<34;i++){
       printf("%d",packet[i]);
     }
+    
+    printf("\nSrc PORT : %d\n", (int)ntohs(tcph->th_sport));
+    printf("Dst PORT : %d\n", (int)ntohs(tcph->th_dport));
 
     }
-
-
-    printf("\n\n");
 
     }
 
