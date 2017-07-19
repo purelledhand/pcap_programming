@@ -17,16 +17,28 @@ int main(){
     }
     
     int packet_status = 0;
+    int cnt = 0;
     while(1){
-   
     packet_status = pcap_next_ex(handle, &header, &packet);
     if(packet_status == 0)
       continue;
     else if(packet_status == -1 || packet_status == -2)
       return 0;
     
-    printf("%.02x\n",packet[12]);
-
+    if(packet[12] == 0x08){
+    ++cnt;
+    printf("Packet #%d\n",cnt);
+    printf("Src MAC : ");
+    for(int i=0;i<6;i++){
+      printf("%.02x",packet[i]);
+    }
+    printf("\n");
+    printf("Dst MAC : ");
+    for(int i=6;i<12;i++){
+      printf("%.02x",packet[i]);
+    }
+    }
+    printf("\n\n");
 
     }
 
