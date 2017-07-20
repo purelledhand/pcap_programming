@@ -3,6 +3,8 @@
 #include "netinet/ip.h"
 #include "netinet/tcp.h"
 #include "arpa/inet.h"
+#include <netinet/in.h>
+#include <net/ethernet.h>
 
 int main(){
     pcap_t *handle;
@@ -53,11 +55,12 @@ int main(){
       printf("%d",packet[i]);
     }
     
-    printf("\nSrc PORT : %d\n", (int)ntohs(tcph->th_sport));
-    printf("Dst PORT : %d\n", (int)ntohs(tcph->th_dport));
+    
+    printf("\nSrc PORT : %d\n", ntohs(tcph->source));
+    printf("Dst PORT : %d\n", ntohs(tcph->dest));
 
+    printf("\n");
     }
-
     }
 
     return 0;
