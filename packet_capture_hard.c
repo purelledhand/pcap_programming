@@ -15,7 +15,9 @@ int main(){
     struct ip *iph;
     struct tcphdr *tcph;
     struct ether_header *ep;
-
+    int datasize;
+    unsigned short ether_type;
+   
     dev = pcap_lookupdev(errbuf);
     printf("interface name : %s\n",dev);
 
@@ -28,20 +30,20 @@ int main(){
     int cnt = 0;
 
     while(1){
+    packet += sizeof(struct ether_header);
     packet_status = pcap_next_ex(handle, &header, &packet);
     if(packet_status == 0)
       continue;
     else if(packet_status == -1 || packet_status == -2)
       return 0;
-    
-    if((packet[12] == 0x08)&&(packet[23] == 6)){
-    ++cnt;
-    printf("Packet #%d\n",cnt);
 
-    
-    packet += sizeof(struct ether_header);
     ep = (struct ether_header *)packet;
     iph = (struct ip *)packet;
+    ether_type = ntohs(ep->ether_type);
+
+    if( ether_type == ETHERTYPE_IP && packet[23] == IPPROTO_TCP ){
+    ++cnt;
+    printf("=====Packet #%d=====\n",cnt);
     
     printf("Src MAC : ");
     for(int i=0;i<6;i++){
@@ -65,7 +67,13 @@ int main(){
     printf("\nSrc PORT : %d\n", ntohs(tcph->source));
     printf("Dst PORT : %d\n", ntohs(tcph->dest));
 
-    printf("\n");
+    printf("DATA\n");
+    datasize = iph->ip_len - (iph->ip_hl - packet[12+iph->ip_hl+12]);
+    for(int i=(iph->ip_len - datasize);i<30;i++){
+      printf("%.02x",packet[i]);
+    }
+
+    printf("\n\n");
     }
     }
 
