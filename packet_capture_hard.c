@@ -14,6 +14,7 @@ int main(){
     struct pcap_pkthdr *header;
     struct ip *iph;
     struct tcphdr *tcph;
+    struct ether_header *ep;
 
     dev = pcap_lookupdev(errbuf);
     printf("interface name : %s\n",dev);
@@ -37,6 +38,11 @@ int main(){
     ++cnt;
     printf("Packet #%d\n",cnt);
 
+    
+    packet += sizeof(struct ether_header);
+    ep = (struct ether_header *)packet;
+    iph = (struct ip *)packet;
+    
     printf("Src MAC : ");
     for(int i=0;i<6;i++){
       printf("%.02x",packet[i]);
@@ -55,7 +61,7 @@ int main(){
       printf("%d",packet[i]);
     }
     
-    
+    tcph = (struct tcphdr *)(packet+iph->ip_hl*4);
     printf("\nSrc PORT : %d\n", ntohs(tcph->source));
     printf("Dst PORT : %d\n", ntohs(tcph->dest));
 
