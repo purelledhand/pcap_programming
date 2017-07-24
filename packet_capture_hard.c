@@ -3,26 +3,26 @@
 #include "netinet/ip.h"
 #include "netinet/tcp.h"
 #include "arpa/inet.h"
-#include <netinet/in.h>
 #include <net/ethernet.h>
+#include <stdint.h>
 
-int main(){
+int main(int argc, char* argv[]){
+    struct ether_header *ep;
+    struct ip *iph;
+    struct tcphdr *tcph;
+    char *data;
+    char src_ip_buf[50];
+    char dst_ip_buf[50];
     pcap_t *handle;
-    char* dev;
     char errbuf[PCAP_ERRBUF_SIZE];
     const u_char *packet;
     struct pcap_pkthdr *header;
-    struct ip *iph;
-    struct tcphdr *tcph;
-    struct ether_header *ep;
-    int datasize;
-    unsigned short ether_type;
+    int data_offset;
+    uint16_t ether_type;
    
-    dev = pcap_lookupdev(errbuf);
-    printf("interface name : %s\n",dev);
-
-    handle = pcap_open_live(dev, 1000, 0, -1, errbuf);
-    if(handle == NULL) {
+    handle = pcap_open_live(argv[1], 1000, 0, -1, errbuf);
+    if(argv[1] == NULL) {
+     printf("you haven't inputted interface name\n");
      return 0;
     }
     
@@ -30,7 +30,6 @@ int main(){
     int cnt = 0;
 
     while(1){
-    packet += sizeof(struct ether_header);
     packet_status = pcap_next_ex(handle, &header, &packet);
     if(packet_status == 0)
       continue;
@@ -38,39 +37,37 @@ int main(){
       return 0;
 
     ep = (struct ether_header *)packet;
-    iph = (struct ip *)packet;
-    ether_type = ntohs(ep->ether_type);
+    iph = (struct ip *)(packet+14); // 14 is ethernet header size
+    tcph = (struct tcphdr *)(packet+14+iph->ip_hl*4);
 
-    if( ether_type == ETHERTYPE_IP && packet[23] == IPPROTO_TCP ){
+    ether_type = ntohs(ep->ether_type);
+    if(iph->ip_p != IPPROTO_TCP) continue;
+    if( ether_type == ETHERTYPE_IP ){
     ++cnt;
     printf("=====Packet #%d=====\n",cnt);
     
     printf("Src MAC : ");
     for(int i=0;i<6;i++){
-      printf("%.02x",packet[i]);
+      printf("%.02x ", ep->ether_shost[i]);
     }
     printf("\nDst MAC : ");
-    for(int i=6;i<12;i++){
-      printf("%.02x",packet[i]);
+    for(int i=0;i<6;i++){
+      printf("%.02x ", ep->ether_dhost[i]);
     }
 
-    printf("\nSrc IP : ");
-    for(int i=26;i<30;i++){
-      printf("%d",packet[i]);
-    }
-    printf("\nDst IP : ");
-    for(int i=30;i<34;i++){
-      printf("%d",packet[i]);
-    }
+    inet_ntop(AF_INET,(&iph->ip_src),src_ip_buf,sizeof(src_ip_buf));
+    inet_ntop(AF_INET,(&iph->ip_dst),dst_ip_buf,sizeof(dst_ip_buf));
+    printf("\nSrc IP : %s",src_ip_buf);
+    printf("\nDst IP : %s",dst_ip_buf);
     
-    tcph = (struct tcphdr *)(packet+iph->ip_hl*4);
     printf("\nSrc PORT : %d\n", ntohs(tcph->source));
     printf("Dst PORT : %d\n", ntohs(tcph->dest));
 
-    printf("DATA\n");
-    datasize = iph->ip_len - (iph->ip_hl - packet[12+iph->ip_hl+12]);
-    for(int i=(iph->ip_len - datasize);i<30;i++){
+    printf("=========DATA=========\n");
+    data_offset = iph->ip_len - (iph->ip_hl*4 + tcph->th_off*4);
+    for(int i=(iph->ip_len - data_offset);i<150;i++){
       printf("%.02x",packet[i]);
+      if(i%16==0) printf("\n");
     }
 
     printf("\n\n");
